@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { gql, useMutation } from '@apollo/client';
+import Select from "react-select"
+import { gql, useMutation, useQuery } from '@apollo/client';
 
 const EDIT_AUTHOR = gql`
 mutation editAuthor($name: String!, $born: Int!) {
@@ -13,12 +14,23 @@ mutation editAuthor($name: String!, $born: Int!) {
   }
 }
 `
+const ALL_PERSONS = gql`
+query {
+  allAuthors {
+    name
+  }
+}
+`
 
 const Birthday = (props) => {
-    const [name, setName] = useState('')
     const [born, setBorn] = useState('')
+    const [selectedOption, setSelectedOption] = useState("");
     const [createBook] = useMutation(EDIT_AUTHOR)
+    const result = useQuery(ALL_PERSONS)
 
+    if (result.loading) {
+        return <div>loading...</div>
+    }
 
     if (!props.show) {
         return null
@@ -26,19 +38,24 @@ const Birthday = (props) => {
 
     const submit = async (event) => {
         event.preventDefault()
-        createBook({ variables: { name, born: parseInt(born) } })
-
-        setName('')
+        createBook({ variables: { name: selectedOption.value, born: parseInt(born) } })
+        setSelectedOption("")
         setBorn('')
 
     }
 
+    const nameList = result.data.allAuthors.map(({ name }) => ({ label: name, value: name }))
+    console.log("nameList", nameList)
     return (
         <div>
+            <h1>Set birthday</h1>
             <form onSubmit={submit}>
-                <div>
-                    name
-                <input value={name} onChange={({ target }) => setName(target.value)} />
+                <div className="App">
+                    <Select
+                        defaultValue={nameList[0]}
+                        onChange={setSelectedOption}
+                        options={nameList}
+                    />
                 </div>
                 <div>
                     born
