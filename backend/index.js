@@ -1,7 +1,20 @@
-const { ApolloServer, gql } = require('apollo-server')
+const { ApolloServer, UserInputError, gql } = require('apollo-server')
+const mongoose = require('mongoose')
+const Book = require('./models/book')
+const Author = require('./models/author')
 var Chance = require('chance');
 
 var chance = new Chance();
+
+const MONGODB_URI = 'mongodb+srv://admin:NIyiss9Tn098XyIl@cluster0.7xg2i.mongodb.net/phonebook?retryWrites=true&w=majority'
+
+mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false, useCreateIndex: true })
+  .then(() => {
+    console.log('connected to MongoDB')
+  })
+  .catch((error) => {
+    console.log('error connection to MongoDB:', error.message)
+  })
 
 let authors = [
   {
@@ -95,16 +108,16 @@ const typeDefs = gql`
   }
   type Book {
     title: String!
-    author: String!
     published: Int!
-    genres: [String]!
+    author: Author!
+    genres: [String!]!
     id: ID!
   }
   type Query {
     bookCount: Int!
     authorCount: Int!
     allBooks(author: String, genre: String): [Book!]!
-    allAuthors: [Author!]!
+    allAuthors: [Author!]
   }
   type Mutation {
     addBook(
@@ -121,25 +134,29 @@ const typeDefs = gql`
 `
 const resolvers = {
   Query: {
-    bookCount: () => books.length,
-    authorCount: () => authors.length,
+    bookCount: () => Book.collection.countDocuments(),
+    authorCount: () => Author.collection.countDocuments(),
     allBooks: (root, args) => {
       if (args.author) {
-        return books.filter((book) => book.author === args.author)
+        return Book.findOne({ author: args.author })
       }
       if (args.genre) {
-        return books.filter((book) => book.genres.includes(args.genre))
+        return Book.find({ genres: { $in: [args.genre] } })
       }
-      return books
+      return Book.find({})
     },
-    allAuthors: () => {
-      return authors.map((author) => {
-        const bookCount = books.reduce(((init, book) => book.author === author.name ? init + 1 : init), 0)
-        return {
-          ...author,
-          bookCount
-        }
-      })
+    allAuthors: async () => {
+      const authors = await Author.find({})
+      if (authors.length < 1) {
+        return authors.map((author) => {
+          const bookCount = books.reduce(((init, book) => book.author === author.name ? init + 1 : init), 0)
+          return {
+            ...author,
+            bookCount
+          }
+        })
+      }
+      return authors
     },
   },
   Mutation: {
@@ -151,27 +168,52 @@ const resolvers = {
       }
       return null
     },
-    addBook: (root, args) => {
-      console.log("args", args)
-      if (books.find(book => book.title === args.title)) {
+    addBook: async (root, args) => {
+      const book = await Book.findOne({ title: args.title })
+      const author = await Author.findOne({ name: args.author })
+      if (book) {
         throw new UserInputError('Name must be unique', {
           invalidArgs: args.title,
         })
       }
-      if (authors.filter((author) => author.name === args.author).length < 1) {
-        authors.push({
+      if (!author) {
+        const newAuthor = new Author({
           name: args.author,
-          born: null,
-          id: chance.guid()
+          born: null
         })
+        try {
+          await newAuthor.save()
+        } catch (error) {
+          throw new UserInputError(error.message, {
+            invalidArgs: args,
+          })
+        }
+        const newBook = new Book({
+          ...args,
+          author: newAuthor
+        })
+        try {
+          await newBook.save()
+        } catch (error) {
+          throw new UserInputError(error.message, {
+            invalidArgs: args,
+          })
+        }
+      } else {
+        const newBook = new Book({
+          ...args,
+          author: author
+        })
+        try {
+          await newBook.save()
+          return newBook
+        } catch (error) {
+          throw new UserInputError(error.message, {
+            invalidArgs: args,
+          })
+        }
       }
-      const book = {
-        ...args,
-        id: chance.guid()
-      }
-      console.log("book", book)
-      books = books.concat(book)
-      return book
+      return;
     },
   }
 }
