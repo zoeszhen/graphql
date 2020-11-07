@@ -13,7 +13,6 @@ mutation createBook($author: String!, $published: Int!, $title: String!, $genres
     published
     id
     genres
-    author
   }
 }
 `
