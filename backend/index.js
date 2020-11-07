@@ -113,6 +113,10 @@ const typeDefs = gql`
       published: Int!
       genres: [String]!
     ): Book
+    editAuthor(
+      name: String!
+      setBornTo: Int!
+    ): Author
   }  
 `
 const resolvers = {
@@ -136,9 +140,17 @@ const resolvers = {
           bookCount
         }
       })
-    }
+    },
   },
   Mutation: {
+    editAuthor: (root, args) => {
+      let targetAuthor = authors.find((author) => author.name === args.name)
+      if (targetAuthor) {
+        targetAuthor.born = args.setBornTo
+        return targetAuthor
+      }
+      return null
+    },
     addBook: (root, args) => {
       console.log("args", args)
       if (books.find(book => book.title === args.title)) {
@@ -146,7 +158,7 @@ const resolvers = {
           invalidArgs: args.title,
         })
       }
-      if (!authors.includes((author) => author.name === args.author)) {
+      if (authors.filter((author) => author.name === args.author).length < 1) {
         authors.push({
           name: args.author,
           born: null,
