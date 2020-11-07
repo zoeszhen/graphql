@@ -5,6 +5,7 @@ const Author = require('./models/author')
 const User = require('./models/user')
 var Chance = require('chance');
 const jwt = require('jsonwebtoken')
+const book = require('./models/book')
 
 const JWT_SECRET = 'NEED_HERE_A_SECRET_KEY'
 
@@ -99,12 +100,15 @@ const resolvers = {
     },
     allAuthors: async () => {
       const authors = await Author.find({})
-      if (authors.length < 1) {
-        return authors.map((author) => {
-          const bookCount = books.reduce(((init, book) => book.author === author.name ? init + 1 : init), 0)
+      if (authors.length > 0) {
+        return authors.map(async (author) => {
+          console.log("authors", author)
+          const bookCount = await Book.find({ author: author._id })
           return {
-            ...author,
-            bookCount
+            name: author.name,
+            id: author._id,
+            born: author.born,
+            bookCount: bookCount.length
           }
         })
       }
