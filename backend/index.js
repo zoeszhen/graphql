@@ -1,4 +1,7 @@
 const { ApolloServer, gql } = require('apollo-server')
+var Chance = require('chance');
+
+var chance = new Chance();
 
 let authors = [
   {
@@ -103,6 +106,14 @@ const typeDefs = gql`
     allBooks(author: String, genre: String): [Book!]!
     allAuthors: [Author!]!
   }
+  type Mutation {
+    addBook(
+      author: String!
+      title: String!
+      published: Int!
+      genres: [String]!
+    ): Book
+  }  
 `
 const resolvers = {
   Query: {
@@ -126,6 +137,30 @@ const resolvers = {
         }
       })
     }
+  },
+  Mutation: {
+    addBook: (root, args) => {
+      console.log("args", args)
+      if (books.find(book => book.title === args.title)) {
+        throw new UserInputError('Name must be unique', {
+          invalidArgs: args.title,
+        })
+      }
+      if (!authors.includes((author) => author.name === args.author)) {
+        authors.push({
+          name: args.author,
+          born: null,
+          id: chance.guid()
+        })
+      }
+      const book = {
+        ...args,
+        id: chance.guid()
+      }
+      console.log("book", book)
+      books = books.concat(book)
+      return book
+    },
   }
 }
 
