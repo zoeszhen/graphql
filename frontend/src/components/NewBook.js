@@ -24,7 +24,9 @@ const NewBook = (props) => {
   const [genre, setGenre] = useState('')
   const [genres, setGenres] = useState([])
 
-  const [createBook] = useMutation(CREATE_BOOK)
+  const [createBook] = useMutation(CREATE_BOOK, {
+    fetchQueries: [{ query: "ALL_BOOKS" }]
+  })
 
 
   if (!props.show) {

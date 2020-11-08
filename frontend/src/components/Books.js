@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { gql, useQuery } from '@apollo/client';
 
-const ALL_PERSONS = gql`
+const ALL_BOOKS = gql`
 query {
   allBooks {
     title
@@ -16,7 +16,7 @@ query {
 `
 const Books = (props) => {
   const [selectedGenre, setGenre] = useState()
-  const result = useQuery(ALL_PERSONS)
+  const result = useQuery(ALL_BOOKS)
 
   if (!props.show) {
     return null

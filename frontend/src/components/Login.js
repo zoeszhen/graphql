@@ -44,7 +44,7 @@ const Login = ({ setError, setToken, show }) => {
         <div>
             <h1>Login</h1>
             <form onSubmit={submit}>
-                <div classUsername="App">
+                <div className="App">
                     username
                 <input value={username} onChange={({ target }) => setUsername(target.value)} />
                 </div>
