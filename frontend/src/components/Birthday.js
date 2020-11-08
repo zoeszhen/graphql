@@ -1,32 +1,14 @@
 import React, { useState } from 'react';
 import Select from "react-select"
-import { gql, useMutation, useQuery } from '@apollo/client';
+import { useMutation, useQuery } from '@apollo/client';
+import { ALL_AUTHORS, EDIT_AUTHOR } from '../queries'
 
-const EDIT_AUTHOR = gql`
-mutation editAuthor($name: String!, $born: Int!) {
-    editAuthor(
-    name: $name,
-    setBornTo: $born,
-  ) {
-    name
-    born
-    id
-  }
-}
-`
-const ALL_PERSONS = gql`
-query {
-  allAuthors {
-    name
-  }
-}
-`
 
 const Birthday = (props) => {
     const [born, setBorn] = useState('')
     const [selectedOption, setSelectedOption] = useState("");
     const [createBook] = useMutation(EDIT_AUTHOR)
-    const result = useQuery(ALL_PERSONS)
+    const result = useQuery(ALL_AUTHORS)
 
     if (result.loading) {
         return <div>loading...</div>

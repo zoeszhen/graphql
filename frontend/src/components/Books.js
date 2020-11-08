@@ -1,19 +1,7 @@
 import React, { useState } from 'react'
 import { gql, useQuery } from '@apollo/client';
+import { ALL_BOOKS } from '../queries'
 
-const ALL_BOOKS = gql`
-query {
-  allBooks {
-    title
-    author{
-      name
-    }
-    published
-    id
-    genres
-  }
-}
-`
 const Books = (props) => {
   const [selectedGenre, setGenre] = useState()
   const result = useQuery(ALL_BOOKS)
