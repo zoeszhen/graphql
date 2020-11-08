@@ -5,7 +5,9 @@ const Author = require('./models/author')
 const User = require('./models/user')
 var Chance = require('chance');
 const jwt = require('jsonwebtoken')
-const book = require('./models/book')
+const { PubSub } = require('apollo-server')
+const pubsub = new PubSub()
+
 
 const JWT_SECRET = 'NEED_HERE_A_SECRET_KEY'
 
@@ -21,7 +23,7 @@ mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true,
     console.log('error connection to MongoDB:', error.message)
   })
 
-const typeDefs = gql`
+const typeDefs = gql`    
   type User {
     username: String!
     favoriteGenre: String!
@@ -70,7 +72,10 @@ const typeDefs = gql`
       username: String!
       password: String!
     ): Token
-  }  
+  }
+  type Subscription {
+    bookAdded: Book!
+  }
 `
 const resolvers = {
   Query: {
@@ -113,6 +118,11 @@ const resolvers = {
         })
       }
       return authors
+    },
+  },
+  Subscription: {
+    personAdded: {
+      subscribe: () => pubsub.asyncIterator(['PERSON_ADDED'])
     },
   },
   Mutation: {
@@ -183,6 +193,8 @@ const resolvers = {
         })
         try {
           await newBook.save()
+          pubsub.publish('BOOK_ADDED', { bookAdded: newBook })
+          return newBook;
         } catch (error) {
           throw new UserInputError(error.message, {
             invalidArgs: args,
@@ -195,6 +207,7 @@ const resolvers = {
         })
         try {
           await newBook.save()
+          pubsub.publish('BOOK_ADDED', { bookAdded: newBook })
           return newBook
         } catch (error) {
           throw new UserInputError(error.message, {
@@ -204,7 +217,13 @@ const resolvers = {
       }
       return;
     },
-  }
+  },
+
+  Subscription: {
+    bookAdded: {
+      subscribe: () => pubsub.asyncIterator(['BOOK_ADDED'])
+    },
+  },
 }
 
 const server = new ApolloServer({
@@ -222,6 +241,7 @@ const server = new ApolloServer({
   }
 })
 
-server.listen().then(({ url }) => {
+server.listen().then(({ url, subscriptionsUrl }) => {
   console.log(`Server ready at ${url}`)
+  console.log(`Subscription ready at ${subscriptionsUrl}`)
 })

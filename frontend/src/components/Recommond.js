@@ -15,7 +15,7 @@ const Books = (props) => {
             const genre = userResult.data.me.favoriteGenre
             setGenre(genre)
         }
-    }, [userResult.loading])
+    }, [userResult.loading, bookResult.loading])
 
     if (!props.show) {
         return null
